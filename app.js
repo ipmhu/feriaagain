@@ -50,23 +50,81 @@ async function supabaseQuery(table, method = 'GET', body = null, filters = '') {
 }
 
 // ============================================================
-// MODO ADMIN
+// MODO ADMIN - SOLICITAR PIN
 // ============================================================
-function toggleModoAdmin() {
-  MODO_ADMIN = !MODO_ADMIN;
-  const btn = document.getElementById('btn-modo-admin');
+function solicitarPinAdmin() {
   if (MODO_ADMIN) {
-    btn.textContent = '⚙ MODO ADMIN (ACTIVO)';
-    btn.classList.add('activo');
-    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block');
-    showToast('🔓 Modo administrador activado', 'success');
-  } else {
-    btn.textContent = '⚙ MODO ADMIN';
-    btn.classList.remove('activo');
-    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-    showToast('🔒 Modo administrador desactivado', 'success');
+    // Si ya está activo, lo desactiva directamente
+    desactivarModoAdmin();
+    return;
   }
-  cargarProyectos();
+  
+  document.getElementById('eval-overlay').style.display = 'block';
+  document.getElementById('eval-proyecto-nombre').textContent = 'PIN DE ADMINISTRADOR';
+  document.getElementById('eval-content').innerHTML = `
+    <div style="text-align:center;padding:2rem 0;">
+      <div style="font-size:18px;font-weight:700;">PIN de Administrador</div>
+      <div style="font-size:10px;color:var(--text-dim);margin-bottom:2rem;">Ingresa el PIN para activar el modo administrador</div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:1.5rem;">
+        ${[1,2,3,4].map(i => `<input class="pin-digit" maxlength="1" type="password" inputmode="numeric" id="admin-pin-d${i}" onkeyup="pinFocusAdmin(this,${i})"/>`).join('')}
+      </div>
+      <div class="error-msg" id="admin-pin-error" style="display:none;"></div>
+      <button class="btn-primary" id="btn-verificar-admin-pin" style="max-width:300px;">VERIFICAR</button>
+    </div>`;
+  setTimeout(() => document.getElementById('admin-pin-d1')?.focus(), 100);
+  document.getElementById('btn-verificar-admin-pin').addEventListener('click', verificarPinAdmin);
+  document.querySelectorAll('#admin-pin-d1, #admin-pin-d2, #admin-pin-d3, #admin-pin-d4').forEach(i => {
+    i.addEventListener('keydown', e => { if (e.key === 'Enter') verificarPinAdmin(); });
+  });
+}
+
+function pinFocusAdmin(el, idx) {
+  el.value = el.value.replace(/[^0-9]/g, '');
+  if (el.value.length === 1 && idx < 4) document.getElementById('admin-pin-d' + (idx + 1))?.focus();
+}
+
+async function verificarPinAdmin() {
+  let pin = '';
+  for (let i = 1; i <= 4; i++) pin += (document.getElementById('admin-pin-d' + i)?.value || '');
+  const err = document.getElementById('admin-pin-error');
+
+  if (pin.length < 4) { err.textContent = '⚠ Ingresa 4 dígitos'; err.style.display = 'block'; return; }
+
+  try {
+    const admins = await supabaseQuery('admin_pins', 'GET', null, `pin=eq.${pin}`);
+    if (admins.length > 0) {
+      activarModoAdmin();
+      document.getElementById('eval-overlay').style.display = 'none';
+      showToast('🔓 Modo administrador activado', 'success');
+    } else {
+      err.textContent = '⚠ PIN incorrecto'; err.style.display = 'block';
+      for (let i = 1; i <= 4; i++) { const d = document.getElementById('admin-pin-d' + i); if (d) d.value = ''; }
+      document.getElementById('admin-pin-d1')?.focus();
+    }
+  } catch(e) {
+    err.textContent = '⚠ Error al verificar'; err.style.display = 'block';
+  }
+}
+
+function activarModoAdmin() {
+  MODO_ADMIN = true;
+  const btn = document.getElementById('btn-modo-admin');
+  btn.textContent = '⚙ MODO ADMIN (ACTIVO)';
+  btn.classList.add('activo');
+  document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block');
+  document.getElementById('btn-publicar-resultados').style.display = 'inline-block';
+  cargarResultados();
+}
+
+function desactivarModoAdmin() {
+  MODO_ADMIN = false;
+  const btn = document.getElementById('btn-modo-admin');
+  btn.textContent = '⚙ MODO ADMIN';
+  btn.classList.remove('activo');
+  document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+  document.getElementById('btn-publicar-resultados').style.display = 'none';
+  showToast('🔒 Modo administrador desactivado', 'success');
+  cargarResultados();
 }
 
 // ============================================================
@@ -210,7 +268,10 @@ function abrirEvalDesdeProyecto(idProyecto) {
   renderPinVotacion();
 }
 
-function cerrarEval() { document.getElementById('eval-overlay').style.display = 'none'; EVAL_PROYECTO = null; }
+function cerrarEval() {
+  document.getElementById('eval-overlay').style.display = 'none';
+  EVAL_PROYECTO = null;
+}
 
 function renderPinVotacion() {
   document.getElementById('eval-content').innerHTML = `
@@ -225,6 +286,9 @@ function renderPinVotacion() {
     </div>`;
   setTimeout(() => document.getElementById('pin-d1')?.focus(), 100);
   document.getElementById('btn-verificar-pin-voto').addEventListener('click', verificarPinVoto);
+  document.querySelectorAll('#pin-d1, #pin-d2, #pin-d3, #pin-d4').forEach(i => {
+    i.addEventListener('keydown', e => { if (e.key === 'Enter') verificarPinVoto(); });
+  });
 }
 
 function pinFocusVoto(el, idx) {
