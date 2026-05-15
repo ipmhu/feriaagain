@@ -11,7 +11,7 @@
 
 <div class="toast" id="toast"></div>
 
-<!-- ============ PORTADA (REGISTRO/LOGIN) ============ -->
+<!-- ============ PORTADA (LOGIN / REGISTRO) ============ -->
 <div id="screen-portada" class="screen active">
   <div class="portada-box">
     <div class="login-logo">
@@ -25,60 +25,95 @@
       <div class="subtitle">IPMHU · 2025 — 2026 · SISTEMA DE VOTACIÓN</div>
     </div>
 
-    <!-- Botones de portada -->
-    <div id="portada-botones">
-      <button class="btn-portada" onclick="mostrarRegistro('docente')"> SOY DOCENTE</button>
-      <button class="btn-portada" onclick="mostrarRegistro('estudiante')"> SOY ESTUDIANTE</button>
-      <button class="btn-portada outline" onclick="mostrarLogin()">🔷 YA TENGO CUENTA</button>
-    </div>
-
-    <!-- Formulario REGISTRO -->
-    <div id="form-registro" style="display:none;">
-      <div class="form-tabs">
-        <button class="tab-btn active" id="tab-docente" onclick="cambiarTabRegistro('docente')">DOCENTE</button>
-        <button class="tab-btn" id="tab-estudiante" onclick="cambiarTabRegistro('estudiante')">ESTUDIANTE</button>
+    <!-- LOGIN -->
+    <div id="form-login">
+      <div style="text-align:center;margin-bottom:1.5rem;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:2px;">Ingresa tu PIN</div>
+        <div style="font-size:10px;color:var(--text-dim);">5 dígitos numéricos</div>
       </div>
-
-      <!-- Registro DOCENTE -->
-      <div id="reg-docente" class="reg-panel active">
-        <div class="form-group"><label>Nombre(s)</label><input type="text" id="reg-doc-nombre" placeholder="Nombre(s)"/></div>
-        <div class="form-group"><label>Apellido(s)</label><input type="text" id="reg-doc-apellido" placeholder="Apellido(s)"/></div>
-        <div class="form-group"><label>PIN de acceso (4 dígitos)</label><input type="password" id="reg-doc-pin" placeholder="••••" maxlength="4" inputmode="numeric"/></div>
-        <button class="btn-primary" onclick="registrarDocente()">REGISTRARME COMO DOCENTE</button>
+      <div class="pin-container" style="display:flex;gap:8px;justify-content:center;margin-bottom:1.5rem;">
+        <input class="pin-digit-login" maxlength="1" type="password" inputmode="numeric" id="login-d1" onkeyup="pinFocusLogin(this, 2)"/>
+        <input class="pin-digit-login" maxlength="1" type="password" inputmode="numeric" id="login-d2" onkeyup="pinFocusLogin(this, 3)"/>
+        <input class="pin-digit-login" maxlength="1" type="password" inputmode="numeric" id="login-d3" onkeyup="pinFocusLogin(this, 4)"/>
+        <input class="pin-digit-login" maxlength="1" type="password" inputmode="numeric" id="login-d4" onkeyup="pinFocusLogin(this, 5)"/>
+        <input class="pin-digit-login" maxlength="1" type="password" inputmode="numeric" id="login-d5"/>
       </div>
-
-<!-- Registro ESTUDIANTE -->
-<div id="reg-estudiante" class="reg-panel">
-  <div class="form-group"><label>Nombre(s)</label><input type="text" id="reg-est-nombre" placeholder="Nombre(s)"/></div>
-  <div class="form-group"><label>Apellido(s)</label><input type="text" id="reg-est-apellido" placeholder="Apellido(s)"/></div>
-  <div class="form-group"><label>Grado</label><select id="reg-est-grado" onchange="actualizarFormEstudiante()"><option value="">— Selecciona —</option><option value="3ro">3ro</option><option value="4to">4to</option><option value="5to">5to</option><option value="6to">6to</option></select></div>
-  <div class="form-group" id="grupo-modulo" style="display:none;">
-    <label>Módulo</label>
-    <select id="reg-est-modulo">
-      <option value="">— Selecciona —</option>
-      <option value="Desarrollo y Administración de Aplicaciones Informáticas">Desarrollo y Administración de Aplicaciones Informáticas</option>
-      <option value="Electrónica">Electrónica</option>
-      <option value="Electricidad">Electricidad</option>
-      <option value="Refrigeración">Refrigeración</option>
-      <option value="Gestión">Gestión</option>
-      <option value="Logística">Logística</option>
-    </select>
-  </div>
-  <div class="form-group"><label>Sección</label><select id="reg-est-seccion"><option value="">— Selecciona —</option></select></div>
-  <div class="form-group"><label>PIN de acceso (4 dígitos)</label><input type="password" id="reg-est-pin" placeholder="••••" maxlength="4" inputmode="numeric"/></div>
-  <button class="btn-primary" onclick="registrarEstudiante()">REGISTRARME COMO ESTUDIANTE</button>
-</div>
-
-      <button class="btn-volver" onclick="volverPortada()">← VOLVER</button>
-    </div>
-
-    <!-- Formulario LOGIN -->
-    <div id="form-login" style="display:none;">
-      <div class="form-group"><label>ID de Usuario</label><input type="text" id="login-id" placeholder="ID001, ID002..."/></div>
-      <div class="form-group"><label>PIN de acceso</label><input type="password" id="login-pin" placeholder="••••" maxlength="4" inputmode="numeric"/></div>
-      <button class="btn-primary" id="btn-login" onclick="handleLogin()">INGRESAR AL SISTEMA</button>
-      <button class="btn-volver" onclick="volverPortada()">← VOLVER</button>
       <div class="error-msg" id="login-error"></div>
+      <button class="btn-primary" id="btn-login" onclick="handleLogin()">INGRESAR</button>
+      <div style="display:flex;gap:10px;margin-top:1rem;">
+        <button class="btn-volver" onclick="mostrarRegistro()" style="flex:1;">REGISTRARME</button>
+        <button class="btn-volver" onclick="mostrarOlvidePin()" style="flex:1;">OLVIDÉ MI PIN</button>
+      </div>
+    </div>
+
+    <!-- REGISTRO -->
+    <div id="form-registro" style="display:none;">
+      <div style="text-align:center;margin-bottom:1rem;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:2px;">Registro</div>
+      </div>
+      <div class="form-group"><label>Nombre(s)</label><input type="text" id="reg-nombre" placeholder="Nombre(s)"/></div>
+      <div class="form-group"><label>Apellido(s)</label><input type="text" id="reg-apellido" placeholder="Apellido(s)"/></div>
+      <div class="form-group"><label>Rol</label><select id="reg-rol" onchange="actualizarFormRegistro()"><option value="">— Selecciona —</option><option value="docente">Docente</option><option value="estudiante">Estudiante</option></select></div>
+      <div id="reg-campos-estudiante" style="display:none;">
+        <div class="form-group"><label>Grado</label><select id="reg-grado" onchange="actualizarGrado()"><option value="">— Selecciona —</option><option value="3ro">3ro</option><option value="4to">4to</option><option value="5to">5to</option><option value="6to">6to</option></select></div>
+        <div class="form-group" id="grupo-modulo" style="display:none;">
+          <label>Módulo</label>
+          <select id="reg-modulo">
+            <option value="">— Selecciona —</option>
+            <option value="Desarrollo y Administración de Aplicaciones Informáticas">Desarrollo y Administración de Aplicaciones Informáticas</option>
+            <option value="Electrónica">Electrónica</option>
+            <option value="Electricidad">Electricidad</option>
+            <option value="Refrigeración">Refrigeración</option>
+            <option value="Gestión">Gestión</option>
+            <option value="Logística">Logística</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Sección</label><select id="reg-seccion"><option value="">— Selecciona —</option></select></div>
+      </div>
+      <div class="form-group">
+        <label>Dato de recuperación</label>
+        <select id="reg-tipo-recuperacion" onchange="actualizarTipoRecuperacion()">
+          <option value="">— Selecciona —</option>
+          <option value="color">Color favorito</option>
+          <option value="animal">Animal favorito</option>
+          <option value="madre">Nombre de tu madre</option>
+        </select>
+      </div>
+      <div class="form-group" id="grupo-respuesta-recuperacion" style="display:none;">
+        <label id="label-respuesta">Respuesta</label>
+        <input type="text" id="reg-respuesta-recuperacion" placeholder="Escribe tu respuesta"/>
+      </div>
+      <div class="error-msg" id="reg-error"></div>
+      <button class="btn-primary" id="btn-registrar" onclick="handleRegistro()">REGISTRARME</button>
+      <button class="btn-volver" onclick="volverPortada()">← VOLVER AL LOGIN</button>
+    </div>
+
+    <!-- OLVIDÉ MI PIN -->
+    <div id="form-olvide-pin" style="display:none;">
+      <div style="text-align:center;margin-bottom:1rem;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:2px;">Recuperar PIN</div>
+        <div style="font-size:10px;color:var(--text-dim);">Responde tu dato de recuperación</div>
+      </div>
+      <div class="form-group"><label>Tu Nombre</label><input type="text" id="recup-nombre" placeholder="Nombre(s)"/></div>
+      <div class="form-group"><label>Tu Apellido</label><input type="text" id="recup-apellido" placeholder="Apellido(s)"/></div>
+      <div class="form-group" id="recup-pregunta-container">
+        <label id="recup-pregunta">—</label>
+        <input type="text" id="recup-respuesta" placeholder="Tu respuesta"/>
+      </div>
+      <div class="form-group" id="recup-nuevo-pin-container" style="display:none;">
+        <label>Nuevo PIN (5 dígitos)</label>
+        <div style="display:flex;gap:6px;">
+          <input class="pin-digit-login" maxlength="1" type="password" inputmode="numeric" id="newpin1" onkeyup="pinFocusNew(this, 2)"/>
+          <input class="pin-digit-login" maxlength="1" type="password" inputmode="numeric" id="newpin2" onkeyup="pinFocusNew(this, 3)"/>
+          <input class="pin-digit-login" maxlength="1" type="password" inputmode="numeric" id="newpin3" onkeyup="pinFocusNew(this, 4)"/>
+          <input class="pin-digit-login" maxlength="1" type="password" inputmode="numeric" id="newpin4" onkeyup="pinFocusNew(this, 5)"/>
+          <input class="pin-digit-login" maxlength="1" type="password" inputmode="numeric" id="newpin5"/>
+        </div>
+      </div>
+      <div class="error-msg" id="recup-error"></div>
+      <button class="btn-primary" id="btn-recup-verificar" onclick="verificarRecuperacion()">VERIFICAR</button>
+      <button class="btn-primary" id="btn-recup-cambiar" onclick="cambiarPin()" style="display:none;">CAMBIAR PIN</button>
+      <button class="btn-volver" onclick="volverPortada()">← VOLVER AL LOGIN</button>
     </div>
 
     <!-- Modal ID generado -->
@@ -86,14 +121,12 @@
       <div class="id-generado-box">
         <div style="font-size:3rem;">✅</div>
         <div style="font-size:18px;font-weight:700;color:var(--text);margin:1rem 0;">¡Registro exitoso!</div>
-        <div style="font-size:12px;color:var(--text-dim);">Tu ID de usuario es:</div>
-        <div style="font-size:42px;font-weight:700;color:var(--cyan);letter-spacing:3px;" id="id-generado-texto">ID000</div>
-        <div style="font-size:11px;color:var(--amber);margin:1rem 0;">⚠ Guarda este ID, lo necesitarás para ingresar</div>
-        <button class="btn-primary" onclick="ingresarConIdGenerado()">INGRESAR AL SISTEMA</button>
+        <div style="font-size:12px;color:var(--text-dim);">Tu PIN de acceso es:</div>
+        <div style="font-size:42px;font-weight:700;color:var(--cyan);letter-spacing:3px;" id="id-generado-texto">00000</div>
+        <div style="font-size:11px;color:var(--amber);margin:1rem 0;">⚠ Guarda este PIN, es único y lo necesitarás para ingresar</div>
+        <button class="btn-primary" onclick="ingresarConPinGenerado()">INGRESAR AL SISTEMA</button>
       </div>
     </div>
-
-    <div class="error-msg" id="reg-error"></div>
   </div>
 </div>
 
@@ -130,7 +163,7 @@
     <div id="view-proyectos" class="view active">
       <div class="content-header">
         <div><div class="page-title">Proyectos</div><div class="page-sub">FERIA DE TECNOLOGÍA 2025-2026</div></div>
-        <button class="btn-sm cyan" onclick="mostrarFormProyecto()">+ NUEVO PROYECTO</button>
+        <button class="btn-sm cyan admin-only" style="display:none;" onclick="mostrarFormProyecto()">+ NUEVO PROYECTO</button>
       </div>
       <div class="content-body">
         <div id="form-proyecto" style="display:none;background:var(--card);border:1px solid var(--border2);border-radius:var(--radius2);padding:1.5rem;margin-bottom:1.5rem;">
