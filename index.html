@@ -52,7 +52,7 @@
         <div class="form-group"><label>Nombre(s)</label><input type="text" id="reg-est-nombre" placeholder="Nombre(s)"/></div>
         <div class="form-group"><label>Apellido(s)</label><input type="text" id="reg-est-apellido" placeholder="Apellido(s)"/></div>
         <div class="form-group"><label>Grado</label><select id="reg-est-grado" onchange="actualizarFormEstudiante()"><option value="">— Selecciona —</option><option value="3ro">3ro</option><option value="4to">4to</option><option value="5to">5to</option><option value="6to">6to</option></select></div>
-        <div class="form-group" id="grupo-modulo" style="display:none;"><label>Módulo</label><select id="reg-est-modulo"><option value="">— Selecciona —</option></select></div>
+        <div class="form-group"><label>Módulo</label><select id="reg-est-grado" onchange="actualizarFormEstudiante()"><option value="">— Selecciona —</option><option value="Desarrollo y Administración de Aplicaciones Informáticas">Desarrollo y Administración de Aplicaciones Informáticas</option><option value="Electronica">Electronica</option><option value="Electricidad">Electricidad</option><option value="Refrigeración">Refrigeración</option><option value="Gestión">Gestión</option><option value="Logística">Logística</option></select></div>
         <div class="form-group"><label>Sección</label><select id="reg-est-seccion"><option value="">— Selecciona —</option></select></div>
         <div class="form-group"><label>PIN de acceso (4 dígitos)</label><input type="password" id="reg-est-pin" placeholder="••••" maxlength="4" inputmode="numeric"/></div>
         <button class="btn-primary" onclick="registrarEstudiante()">REGISTRARME COMO ESTUDIANTE</button>
