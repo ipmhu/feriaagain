@@ -7,12 +7,9 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 // ============================================================
 // ESTADO GLOBAL
 // ============================================================
-let SESSION = null;
 let PROYECTOS_DATA = [];
-let VOTOS_DATA = [];
+let MODO_ADMIN = false;
 let EVAL_PROYECTO = null;
-let PIN_GENERADO = null;
-let USUARIO_RECUPERACION = null;
 
 // ============================================================
 // TOAST
@@ -53,362 +50,22 @@ async function supabaseQuery(table, method = 'GET', body = null, filters = '') {
 }
 
 // ============================================================
-// GENERAR PIN ÚNICO DE 5 DÍGITOS
+// MODO ADMIN
 // ============================================================
-async function generarPinUnico() {
-  let pin, existe;
-  do {
-    pin = String(Math.floor(10000 + Math.random() * 90000));
-    existe = await supabaseQuery('usuarios', 'GET', null, `pin=eq.${pin}`);
-  } while (existe.length > 0);
-  return pin;
-}
-
-// ============================================================
-// PIN FOCUS - LOGIN
-// ============================================================
-function pinFocusLogin(el, next) {
-  el.value = el.value.replace(/[^0-9]/g, '');
-  if (el.value.length === 1 && next <= 5) {
-    const n = document.getElementById('login-d' + next);
-    if (n) n.focus();
-  }
-}
-
-// ============================================================
-// PIN FOCUS - NUEVO PIN (RECUPERACIÓN)
-// ============================================================
-function pinFocusNew(el, next) {
-  el.value = el.value.replace(/[^0-9]/g, '');
-  if (el.value.length === 1 && next <= 5) {
-    const n = document.getElementById('newpin' + next);
-    if (n) n.focus();
-  }
-}
-
-// ============================================================
-// ENTER EN LOGIN
-// ============================================================
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') {
-    if (document.getElementById('screen-portada').classList.contains('active')) {
-      if (document.getElementById('form-login').style.display !== 'none') {
-        handleLogin();
-      }
-    }
-  }
-});
-
-// ============================================================
-// LOGIN
-// ============================================================
-async function handleLogin() {
-  let pin = '';
-  for (let i = 1; i <= 5; i++) pin += (document.getElementById('login-d' + i)?.value || '');
-  const err = document.getElementById('login-error');
-  const btn = document.getElementById('btn-login');
-
-  if (pin.length !== 5 || !/^\d{5}$/.test(pin)) {
-    err.textContent = '⚠ Ingresa los 5 dígitos de tu PIN.';
-    err.classList.add('show');
-    return;
-  }
-
-  btn.textContent = 'VERIFICANDO...'; btn.disabled = true; err.classList.remove('show');
-
-  try {
-    const usuarios = await supabaseQuery('usuarios', 'GET', null, `pin=eq.${pin}`);
-    if (!usuarios.length) throw new Error('PIN incorrecto');
-    SESSION = usuarios[0];
-    localStorage.setItem('feria_session', JSON.stringify(SESSION));
-    iniciarApp();
-  } catch(e) {
-    err.textContent = '⚠ PIN incorrecto.';
-    err.classList.add('show');
-    btn.textContent = 'INGRESAR';
-    btn.disabled = false;
-    for (let i = 1; i <= 5; i++) { const d = document.getElementById('login-d' + i); if (d) d.value = ''; }
-    document.getElementById('login-d1')?.focus();
-  }
-}
-
-// ============================================================
-// MOSTRAR REGISTRO
-// ============================================================
-function mostrarRegistro() {
-  document.getElementById('form-login').style.display = 'none';
-  document.getElementById('form-registro').style.display = 'block';
-  document.getElementById('form-olvide-pin').style.display = 'none';
-  document.getElementById('modal-id-generado').style.display = 'none';
-  limpiarFormRegistro();
-}
-
-// ============================================================
-// MOSTRAR OLVIDÉ MI PIN
-// ============================================================
-function mostrarOlvidePin() {
-  document.getElementById('form-login').style.display = 'none';
-  document.getElementById('form-registro').style.display = 'none';
-  document.getElementById('form-olvide-pin').style.display = 'block';
-  document.getElementById('modal-id-generado').style.display = 'none';
-  document.getElementById('recup-nombre').value = '';
-  document.getElementById('recup-apellido').value = '';
-  document.getElementById('recup-respuesta').value = '';
-  document.getElementById('recup-nuevo-pin-container').style.display = 'none';
-  document.getElementById('btn-recup-verificar').style.display = 'block';
-  document.getElementById('btn-recup-cambiar').style.display = 'none';
-  document.getElementById('recup-error').classList.remove('show');
-  USUARIO_RECUPERACION = null;
-}
-
-// ============================================================
-// VOLVER A LOGIN
-// ============================================================
-function volverPortada() {
-  document.getElementById('form-login').style.display = 'block';
-  document.getElementById('form-registro').style.display = 'none';
-  document.getElementById('form-olvide-pin').style.display = 'none';
-  document.getElementById('modal-id-generado').style.display = 'none';
-  document.getElementById('login-error').classList.remove('show');
-  for (let i = 1; i <= 5; i++) { const d = document.getElementById('login-d' + i); if (d) d.value = ''; }
-}
-
-// ============================================================
-// ACTUALIZAR FORM REGISTRO (ROL)
-// ============================================================
-function actualizarFormRegistro() {
-  const rol = document.getElementById('reg-rol').value;
-  if (rol === 'estudiante') {
-    document.getElementById('reg-campos-estudiante').style.display = 'block';
+function toggleModoAdmin() {
+  MODO_ADMIN = !MODO_ADMIN;
+  const btn = document.getElementById('btn-modo-admin');
+  if (MODO_ADMIN) {
+    btn.textContent = '⚙ MODO ADMIN (ACTIVO)';
+    btn.classList.add('activo');
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block');
+    showToast('🔓 Modo administrador activado', 'success');
   } else {
-    document.getElementById('reg-campos-estudiante').style.display = 'none';
-    document.getElementById('grupo-modulo').style.display = 'none';
+    btn.textContent = '⚙ MODO ADMIN';
+    btn.classList.remove('activo');
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+    showToast('🔒 Modo administrador desactivado', 'success');
   }
-}
-
-// ============================================================
-// ACTUALIZAR GRADO (MÓDULO/SECCIÓN)
-// ============================================================
-function actualizarGrado() {
-  const grado = document.getElementById('reg-grado').value;
-  const grupoModulo = document.getElementById('grupo-modulo');
-  const selSeccion = document.getElementById('reg-seccion');
-  selSeccion.innerHTML = '<option value="">— Selecciona —</option>';
-
-  if (grado === '3ro') {
-    grupoModulo.style.display = 'none';
-    selSeccion.innerHTML += '<option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option>';
-  } else if (['4to', '5to', '6to'].includes(grado)) {
-    grupoModulo.style.display = 'block';
-    selSeccion.innerHTML += '<option value="A">A</option><option value="B">B</option>';
-  } else {
-    grupoModulo.style.display = 'none';
-  }
-}
-
-// ============================================================
-// ACTUALIZAR TIPO DE RECUPERACIÓN
-// ============================================================
-function actualizarTipoRecuperacion() {
-  const tipo = document.getElementById('reg-tipo-recuperacion').value;
-  const grupo = document.getElementById('grupo-respuesta-recuperacion');
-  const label = document.getElementById('label-respuesta');
-
-  if (tipo) {
-    grupo.style.display = 'block';
-    if (tipo === 'color') label.textContent = '¿Cuál es tu color favorito?';
-    else if (tipo === 'animal') label.textContent = '¿Cuál es tu animal favorito?';
-    else if (tipo === 'madre') label.textContent = '¿Cuál es el nombre de tu madre?';
-  } else {
-    grupo.style.display = 'none';
-  }
-}
-
-// ============================================================
-// LIMPIAR FORM REGISTRO
-// ============================================================
-function limpiarFormRegistro() {
-  document.getElementById('reg-nombre').value = '';
-  document.getElementById('reg-apellido').value = '';
-  document.getElementById('reg-rol').value = '';
-  document.getElementById('reg-campos-estudiante').style.display = 'none';
-  document.getElementById('reg-grado').value = '';
-  document.getElementById('reg-modulo').value = '';
-  document.getElementById('reg-seccion').innerHTML = '<option value="">— Selecciona —</option>';
-  document.getElementById('reg-tipo-recuperacion').value = '';
-  document.getElementById('grupo-respuesta-recuperacion').style.display = 'none';
-  document.getElementById('reg-respuesta-recuperacion').value = '';
-  document.getElementById('grupo-modulo').style.display = 'none';
-  document.getElementById('reg-error').classList.remove('show');
-}
-
-// ============================================================
-// REGISTRO
-// ============================================================
-async function handleRegistro() {
-  const nombre = document.getElementById('reg-nombre').value.trim();
-  const apellido = document.getElementById('reg-apellido').value.trim();
-  const rol = document.getElementById('reg-rol').value;
-  const tipoRec = document.getElementById('reg-tipo-recuperacion').value;
-  const respRec = document.getElementById('reg-respuesta-recuperacion').value.trim();
-  const err = document.getElementById('reg-error');
-
-  if (!nombre || !apellido) { err.textContent = '⚠ Completa nombre y apellido.'; err.classList.add('show'); return; }
-  if (!rol) { err.textContent = '⚠ Selecciona tu rol.'; err.classList.add('show'); return; }
-  if (!tipoRec || !respRec) { err.textContent = '⚠ Selecciona y responde el dato de recuperación.'; err.classList.add('show'); return; }
-
-  let grado = null, modulo = null, seccion = null;
-  if (rol === 'estudiante') {
-    grado = document.getElementById('reg-grado').value;
-    seccion = document.getElementById('reg-seccion').value;
-    if (!grado) { err.textContent = '⚠ Selecciona tu grado.'; err.classList.add('show'); return; }
-    if (!seccion) { err.textContent = '⚠ Selecciona tu sección.'; err.classList.add('show'); return; }
-    if (['4to', '5to', '6to'].includes(grado)) {
-      modulo = document.getElementById('reg-modulo').value;
-      if (!modulo) { err.textContent = '⚠ Selecciona tu módulo.'; err.classList.add('show'); return; }
-    }
-  }
-
-  try {
-    const pin = await generarPinUnico();
-    const body = {
-      nombre, apellido, rol, pin,
-      tipo_recuperacion: tipoRec,
-      respuesta_recuperacion: respRec.toLowerCase().trim()
-    };
-    if (grado) body.grado = grado;
-    if (modulo) body.modulo = modulo;
-    if (seccion) body.seccion = seccion;
-
-    await supabaseQuery('usuarios', 'POST', body);
-    PIN_GENERADO = pin;
-    document.getElementById('id-generado-texto').textContent = pin;
-    document.getElementById('form-registro').style.display = 'none';
-    document.getElementById('modal-id-generado').style.display = 'block';
-    err.classList.remove('show');
-  } catch(e) {
-    err.textContent = '⚠ Error al registrar. Intenta de nuevo.';
-    err.classList.add('show');
-  }
-}
-
-// ============================================================
-// INGRESAR CON PIN GENERADO
-// ============================================================
-async function ingresarConPinGenerado() {
-  try {
-    const usuarios = await supabaseQuery('usuarios', 'GET', null, `pin=eq.${PIN_GENERADO}`);
-    if (usuarios.length) {
-      SESSION = usuarios[0];
-      localStorage.setItem('feria_session', JSON.stringify(SESSION));
-      iniciarApp();
-    }
-  } catch(e) {
-    showToast('Error al ingresar', 'error');
-  }
-}
-
-// ============================================================
-// RECUPERAR PIN - VERIFICAR
-// ============================================================
-async function verificarRecuperacion() {
-  const nombre = document.getElementById('recup-nombre').value.trim();
-  const apellido = document.getElementById('recup-apellido').value.trim();
-  const respuesta = document.getElementById('recup-respuesta').value.trim().toLowerCase();
-  const err = document.getElementById('recup-error');
-
-  if (!nombre || !apellido) { err.textContent = '⚠ Ingresa tu nombre y apellido.'; err.classList.add('show'); return; }
-  if (!respuesta) { err.textContent = '⚠ Responde la pregunta.'; err.classList.add('show'); return; }
-
-  try {
-    const usuarios = await supabaseQuery('usuarios', 'GET', null, `nombre=eq.${nombre}&apellido=eq.${apellido}`);
-    if (!usuarios.length) { err.textContent = '⚠ Usuario no encontrado.'; err.classList.add('show'); return; }
-
-    const user = usuarios[0];
-    document.getElementById('recup-pregunta').textContent =
-      user.tipo_recuperacion === 'color' ? '¿Cuál es tu color favorito?' :
-      user.tipo_recuperacion === 'animal' ? '¿Cuál es tu animal favorito?' :
-      '¿Cuál es el nombre de tu madre?';
-
-    if (user.respuesta_recuperacion !== respuesta) {
-      err.textContent = '⚠ Respuesta incorrecta.';
-      err.classList.add('show');
-      return;
-    }
-
-    USUARIO_RECUPERACION = user;
-    document.getElementById('recup-nuevo-pin-container').style.display = 'block';
-    document.getElementById('btn-recup-verificar').style.display = 'none';
-    document.getElementById('btn-recup-cambiar').style.display = 'block';
-    err.classList.remove('show');
-  } catch(e) {
-    err.textContent = '⚠ Error. Intenta de nuevo.';
-    err.classList.add('show');
-  }
-}
-
-// ============================================================
-// RECUPERAR PIN - CAMBIAR
-// ============================================================
-async function cambiarPin() {
-  let nuevoPin = '';
-  for (let i = 1; i <= 5; i++) nuevoPin += (document.getElementById('newpin' + i)?.value || '');
-  const err = document.getElementById('recup-error');
-
-  if (nuevoPin.length !== 5 || !/^\d{5}$/.test(nuevoPin)) {
-    err.textContent = '⚠ Ingresa los 5 dígitos del nuevo PIN.';
-    err.classList.add('show');
-    return;
-  }
-
-  // Verificar que no exista
-  const existe = await supabaseQuery('usuarios', 'GET', null, `pin=eq.${nuevoPin}`);
-  if (existe.length > 0) {
-    err.textContent = '⚠ Ese PIN ya está en uso. Elige otro.';
-    err.classList.add('show');
-    return;
-  }
-
-  try {
-    await supabaseQuery('usuarios', 'PATCH', { pin: nuevoPin }, `id=eq.${USUARIO_RECUPERACION.id}`);
-    showToast('✅ PIN actualizado correctamente', 'success');
-    volverPortada();
-  } catch(e) {
-    err.textContent = '⚠ Error al actualizar.';
-    err.classList.add('show');
-  }
-}
-
-// ============================================================
-// LOGOUT
-// ============================================================
-document.getElementById('btn-logout').addEventListener('click', () => {
-  if (confirm('¿Cerrar sesión?')) {
-    SESSION = null;
-    localStorage.removeItem('feria_session');
-    document.getElementById('screen-app').classList.remove('active');
-    document.getElementById('screen-portada').classList.add('active');
-    volverPortada();
-  }
-});
-
-// ============================================================
-// INICIAR APP
-// ============================================================
-function iniciarApp() {
-  document.getElementById('screen-portada').classList.remove('active');
-  document.getElementById('screen-app').classList.add('active');
-  configurarMenuResponsive();
-  const initials = (SESSION.nombre || '')[0] + ((SESSION.apellido || '')[0] || '');
-  document.getElementById('user-avatar').textContent = initials.toUpperCase();
-  document.getElementById('user-nombre').textContent = (SESSION.nombre || '') + ' ' + (SESSION.apellido || '');
-  document.getElementById('user-rol').textContent = SESSION.rol?.toUpperCase() || '';
-
-  if (SESSION.rol === 'administrador') {
-    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
-  }
-
-  configurarNavegacion();
   cargarProyectos();
 }
 
@@ -427,7 +84,6 @@ function configurarNavegacion() {
       if (view === 'proyectos') cargarProyectos();
       if (view === 'votar') cargarVotar();
       if (view === 'resultados') cargarResultados();
-      if (view === 'admin') cargarAdmin();
     });
   });
 }
@@ -436,6 +92,7 @@ function configurarNavegacion() {
 // FORMULARIO PROYECTO (SOLO ADMIN)
 // ============================================================
 function mostrarFormProyecto() {
+  if (!MODO_ADMIN) { showToast('⚠ Activa el modo administrador primero', 'error'); return; }
   document.getElementById('form-proyecto').style.display = 'block';
   document.getElementById('proy-nombre').value = '';
   document.getElementById('proy-desc').value = '';
@@ -480,17 +137,13 @@ async function guardarProyecto() {
   repRows.forEach(row => {
     const inputs = row.querySelectorAll('input');
     if (inputs[0]?.value.trim()) {
-      representantes.push({
-        nombre: inputs[0].value.trim(),
-        curso: inputs[1]?.value.trim() || '',
-        contacto: inputs[2]?.value.trim() || ''
-      });
+      representantes.push({ nombre: inputs[0].value.trim(), curso: inputs[1]?.value.trim() || '', contacto: inputs[2]?.value.trim() || '' });
     }
   });
   if (!representantes.length) { err.textContent = '⚠ Agrega al menos un representante.'; err.classList.add('show'); return; }
 
   try {
-    const proyRes = await supabaseQuery('proyectos', 'POST', { nombre, descripcion: desc, pin, creado_por: SESSION.id });
+    const proyRes = await supabaseQuery('proyectos', 'POST', { nombre, descripcion: desc, pin });
     const idProyecto = proyRes[0]?.id;
     for (const rep of representantes) {
       await supabaseQuery('representantes', 'POST', { id_proyecto: idProyecto, nombre: rep.nombre, curso: rep.curso, contacto: rep.contacto });
@@ -498,10 +151,7 @@ async function guardarProyecto() {
     showToast('✅ Proyecto registrado', 'success');
     cancelarFormProyecto();
     cargarProyectos();
-  } catch(e) {
-    err.textContent = '⚠ Error al guardar.';
-    err.classList.add('show');
-  }
+  } catch(e) { err.textContent = '⚠ Error al guardar.'; err.classList.add('show'); }
 }
 
 // ============================================================
@@ -522,9 +172,7 @@ async function cargarProyectos() {
         <button class="btn-sm" onclick="verRepresentantes('${p.id}')">👥 VER REPRESENTANTES</button>
         <button class="btn-sm" onclick="abrirEvalDesdeProyecto('${p.id}')" style="margin-left:4px;">▶ VOTAR</button>
       </div>`).join('');
-  } catch(e) {
-    container.innerHTML = '<div class="empty-state">ERROR AL CARGAR</div>';
-  }
+  } catch(e) { container.innerHTML = '<div class="empty-state">ERROR AL CARGAR</div>'; }
 }
 
 // ============================================================
@@ -545,9 +193,7 @@ async function verRepresentantes(idProyecto) {
         <div class="rep-curso">${r.curso || '—'}</div>
         <div class="rep-contact">📱 ${r.contacto || '—'}</div>
       </div>`).join('');
-  } catch(e) {
-    document.getElementById('modal-reps-body').innerHTML = '<div class="empty-state">ERROR</div>';
-  }
+  } catch(e) { document.getElementById('modal-reps-body').innerHTML = '<div class="empty-state">ERROR</div>'; }
 }
 
 function cerrarModalReps() { document.getElementById('modal-reps').classList.remove('open'); }
@@ -593,12 +239,13 @@ async function verificarPinVoto() {
   if (pin.length < 4) { err.textContent = '⚠ Ingresa 4 dígitos'; err.style.display = 'block'; return; }
 
   if (EVAL_PROYECTO.pin === pin) {
-    const existentes = await supabaseQuery('votos', 'GET', null, `id_proyecto=eq.${EVAL_PROYECTO.id}&votante_id=eq.${SESSION.id}`);
-    if (existentes.length > 0) {
+    const existentes = await supabaseQuery('votos', 'GET', null, `id_proyecto=eq.${EVAL_PROYECTO.id}`);
+    const yaVoto = existentes.length > 0;
+    if (yaVoto) {
       document.getElementById('eval-content').innerHTML = `
         <div style="text-align:center;padding:3rem;">
           <div style="font-size:3rem;">⚠️</div>
-          <div style="font-size:18px;font-weight:700;color:var(--amber);">Ya has votado por este proyecto</div>
+          <div style="font-size:18px;font-weight:700;color:var(--amber);">Ya se ha votado por este proyecto</div>
           <button class="btn-primary" onclick="cerrarEval()" style="max-width:300px;margin-top:1rem;">CERRAR</button>
         </div>`;
       return;
@@ -631,7 +278,7 @@ async function confirmarVoto() {
       <div style="font-size:18px;font-weight:700;color:var(--cyan);">Registrando voto...</div>
     </div><style>@keyframes spin{to{transform:rotate(360deg);}}</style>`;
   try {
-    await supabaseQuery('votos', 'POST', { id_proyecto: EVAL_PROYECTO.id, votante_id: SESSION.id });
+    await supabaseQuery('votos', 'POST', { id_proyecto: EVAL_PROYECTO.id });
     document.getElementById('eval-content').innerHTML = `
       <div style="text-align:center;padding:3rem;">
         <div style="font-size:3rem;">✅</div>
@@ -641,11 +288,7 @@ async function confirmarVoto() {
     showToast('✅ Voto registrado', 'success');
   } catch(e) {
     document.getElementById('eval-content').innerHTML = `
-      <div style="text-align:center;padding:3rem;">
-        <div style="font-size:3rem;">❌</div>
-        <div style="font-size:18px;color:var(--red);">Error</div>
-        <button class="btn-primary" onclick="cerrarEval()" style="max-width:300px;margin-top:1rem;">CERRAR</button>
-      </div>`;
+      <div style="text-align:center;padding:3rem;"><div style="font-size:3rem;">❌</div><div style="font-size:18px;color:var(--red);">Error</div><button class="btn-primary" onclick="cerrarEval()" style="max-width:300px;margin-top:1rem;">CERRAR</button></div>`;
   }
 }
 
@@ -658,8 +301,6 @@ async function cargarVotar() {
   container.innerHTML = '<div class="loader">[ CARGANDO... ]</div>';
   try {
     PROYECTOS_DATA = await supabaseQuery('proyectos');
-    VOTOS_DATA = await supabaseQuery('votos', 'GET', null, `votante_id=eq.${SESSION.id}`);
-    const votadosIds = VOTOS_DATA.map(v => v.id_proyecto);
     if (!PROYECTOS_DATA.length) { container.innerHTML = '<div class="empty-state">NO HAY PROYECTOS</div>'; return; }
     container.innerHTML = PROYECTOS_DATA.map(p => `
       <div class="proyecto-card">
@@ -667,9 +308,7 @@ async function cargarVotar() {
         <div class="curso-name">${p.nombre}</div>
         <div class="proyecto-desc">${p.descripcion || ''}</div>
         <button class="btn-sm" onclick="verRepresentantes('${p.id}')">👥 VER REPRESENTANTES</button>
-        ${votadosIds.includes(p.id)
-          ? '<button class="btn-sm votado" disabled>✓ YA VOTASTE</button>'
-          : `<button class="btn-sm success" onclick="abrirEvalDesdeProyecto('${p.id}')">▶ VOTAR</button>`}
+        <button class="btn-sm success" onclick="abrirEvalDesdeProyecto('${p.id}')">▶ VOTAR</button>
       </div>`).join('');
   } catch(e) { container.innerHTML = '<div class="empty-state">ERROR</div>'; }
 }
@@ -677,6 +316,25 @@ async function cargarVotar() {
 // ============================================================
 // RESULTADOS
 // ============================================================
+async function toggleResultados() {
+  if (!MODO_ADMIN) return;
+  try {
+    const pub = await supabaseQuery('resultados_publicos', 'GET', null, 'id=eq.1');
+    const btn = document.getElementById('btn-publicar-resultados');
+    if (pub.length > 0 && pub[0].publico) {
+      await supabaseQuery('resultados_publicos', 'PATCH', { publico: false }, 'id=eq.1');
+      showToast('🔒 Resultados ocultados', 'success');
+      btn.textContent = '📢 PUBLICAR RESULTADOS';
+    } else {
+      if (pub.length > 0) await supabaseQuery('resultados_publicos', 'PATCH', { publico: true }, 'id=eq.1');
+      else await supabaseQuery('resultados_publicos', 'POST', { id: 1, publico: true });
+      showToast('📢 Resultados publicados', 'success');
+      btn.textContent = '🔒 OCULTAR RESULTADOS';
+    }
+    cargarResultados();
+  } catch(e) { showToast('Error', 'error'); }
+}
+
 async function cargarResultados() {
   const container = document.getElementById('resultados-container');
   if (!container) return;
@@ -684,10 +342,17 @@ async function cargarResultados() {
   try {
     const pub = await supabaseQuery('resultados_publicos', 'GET', null, 'id=eq.1');
     const sonPublicos = pub.length > 0 && pub[0].publico === true;
-    if (!sonPublicos && SESSION.rol !== 'administrador') {
-      container.innerHTML = `<div class="empty-state"><div style="font-size:3rem;">🔒</div><div style="font-size:18px;font-weight:700;">Resultados no disponibles</div><div style="font-size:12px;color:var(--text-dim);">El administrador aún no ha publicado los resultados.</div></div>`;
+
+    const btn = document.getElementById('btn-publicar-resultados');
+    if (btn) {
+      btn.textContent = sonPublicos ? '🔒 OCULTAR RESULTADOS' : '📢 PUBLICAR RESULTADOS';
+    }
+
+    if (!sonPublicos && !MODO_ADMIN) {
+      container.innerHTML = `<div class="empty-state"><div style="font-size:3rem;">🔒</div><div style="font-size:18px;font-weight:700;">Resultados no disponibles</div><div style="font-size:12px;color:var(--text-dim);">Los resultados serán publicados próximamente.</div></div>`;
       return;
     }
+
     const [proyectos, votos] = await Promise.all([supabaseQuery('proyectos'), supabaseQuery('votos')]);
     const conteo = {};
     proyectos.forEach(p => { conteo[p.id] = { nombre: p.nombre, descripcion: p.descripcion, votos: 0 }; });
@@ -705,42 +370,6 @@ async function cargarResultados() {
         </div>`;
     }).join('');
   } catch(e) { container.innerHTML = '<div class="empty-state">ERROR</div>'; }
-}
-
-// ============================================================
-// ADMIN
-// ============================================================
-async function cargarAdmin() {
-  const estado = document.getElementById('estado-publicacion');
-  const btn = document.getElementById('btn-publicar');
-  try {
-    const pub = await supabaseQuery('resultados_publicos', 'GET', null, 'id=eq.1');
-    if (pub.length > 0 && pub[0].publico) {
-      estado.innerHTML = '<span style="color:var(--green);">✅ Resultados PÚBLICOS.</span>';
-      btn.textContent = '🔒 OCULTAR RESULTADOS';
-      btn.onclick = ocultarResultados;
-    } else {
-      estado.innerHTML = '<span style="color:var(--amber);">⚠ Resultados OCULTOS.</span>';
-      btn.textContent = '📢 HACER PÚBLICOS LOS RESULTADOS';
-      btn.onclick = publicarResultados;
-    }
-  } catch(e) { estado.innerHTML = '<span style="color:var(--red);">Error</span>'; }
-}
-
-async function publicarResultados() {
-  try {
-    const pub = await supabaseQuery('resultados_publicos', 'GET', null, 'id=eq.1');
-    if (pub.length > 0) await supabaseQuery('resultados_publicos', 'PATCH', { publico: true }, 'id=eq.1');
-    else await supabaseQuery('resultados_publicos', 'POST', { id: 1, publico: true });
-    showToast('📢 Resultados publicados', 'success'); cargarAdmin();
-  } catch(e) { showToast('Error', 'error'); }
-}
-
-async function ocultarResultados() {
-  try {
-    await supabaseQuery('resultados_publicos', 'PATCH', { publico: false }, 'id=eq.1');
-    showToast('🔒 Resultados ocultados', 'success'); cargarAdmin();
-  } catch(e) { showToast('Error', 'error'); }
 }
 
 // ============================================================
@@ -765,24 +394,10 @@ function configurarMenuResponsive() {
 }
 
 // ============================================================
-// VERIFICAR SESIÓN
+// INICIAR
 // ============================================================
 (function() {
-  const saved = localStorage.getItem('feria_session');
-  if (saved) {
-    try {
-      SESSION = JSON.parse(saved);
-      document.getElementById('screen-portada').classList.remove('active');
-      document.getElementById('screen-app').classList.add('active');
-      const initials = (SESSION.nombre || '')[0] + ((SESSION.apellido || '')[0] || '');
-      document.getElementById('user-avatar').textContent = initials.toUpperCase();
-      document.getElementById('user-nombre').textContent = (SESSION.nombre || '') + ' ' + (SESSION.apellido || '');
-      document.getElementById('user-rol').textContent = SESSION.rol?.toUpperCase() || '';
-      if (SESSION.rol === 'administrador') {
-        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
-      }
-      configurarNavegacion();
-      cargarProyectos();
-    } catch(e) { localStorage.removeItem('feria_session'); SESSION = null; }
-  }
+  configurarNavegacion();
+  cargarProyectos();
+  configurarMenuResponsive();
 })();
