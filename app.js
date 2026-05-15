@@ -132,8 +132,17 @@ function actualizarFormEstudiante() {
     selSeccion.innerHTML = '<option value="">— Selecciona —</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option>';
   } else if (['4to', '5to', '6to'].includes(grado)) {
     grupoModulo.style.display = 'block';
-    for (let i = 1; i <= 12; i++) selModulo.innerHTML += `<option value="M${i}">Módulo ${i}</option>`;
-    selSeccion.innerHTML = '<option value="">— Selecciona —</option><option value="A">A</option><option value="B">B</option>';
+const modulos = [
+  'Desarrollo y Administración de Aplicaciones Informáticas',
+  'Electrónica',
+  'Electricidad',
+  'Refrigeración',
+  'Gestión',
+  'Logística'
+];
+modulos.forEach(m => {
+  selModulo.innerHTML += `<option value="${m}">${m}</option>`;
+});    selSeccion.innerHTML = '<option value="">— Selecciona —</option><option value="A">A</option><option value="B">B</option>';
   } else {
     grupoModulo.style.display = 'none';
   }
