@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Feria de Tecnología IPMHU 2025-2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- ============ LOGIN ============ -->
+<div id="screen-login" class="screen active">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="hex-icon">
+        <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+          <polygon points="32,4 58,18 58,46 32,60 6,46 6,18" stroke="#00c8ff" stroke-width="1.5" fill="rgba(0,200,255,0.05)"/>
+          <circle cx="32" cy="32" r="8" stroke="#00c8ff" stroke-width="1" fill="rgba(0,200,255,0.1)"/>
+        </svg>
+      </div>
+      <div class="title">Feria de Tecnología</div>
+      <div class="subtitle">IPMHU · 2025 — 2026 · SISTEMA DE EVALUACIÓN</div>
+    </div>
+    <div class="form-group">
+      <label>Usuario</label>
+      <input type="text" id="login-user" placeholder="Usuario" />
+    </div>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" placeholder="••••••••" />
+    </div>
+    <button class="btn-primary" id="btn-login">ACCEDER AL SISTEMA</button>
+    <div class="error-msg" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="screen-app" class="screen">
+  
+  <!-- BOTÓN HAMBURGUESA (solo celular) -->
+  <button class="hamburger-btn" id="hamburger-btn" onclick="toggleMenu()">☰</button>
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="cerrarMenu()"></div>
+  
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">Feria de Tecnología<br/>IPMHU</div>
+      <div class="sidebar-sub">2025 — 2026</div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="user-avatar">--</div>
+      <div class="user-info">
+        <div class="user-name" id="user-nombre">---</div>
+        <div class="user-role" id="user-rol">---</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" data-view="cursos" onclick="cerrarMenu()"><span class="nav-icon">⬡</span> Cursos</div>
+      <div class="nav-item" data-view="rubrica" onclick="cerrarMenu()"><span class="nav-icon">◈</span> Rúbrica</div>
+      <div class="nav-item" data-view="totales" onclick="cerrarMenu()"><span class="nav-icon">◉</span> Totales</div>
+      <div class="nav-item" data-view="edicion" onclick="cerrarMenu()"><span class="nav-icon">◎</span> Edición</div>
+      <div class="nav-item" data-view="evaluar" onclick="cerrarMenu()"><span class="nav-icon">▷</span> Evaluar</div>
+      <div class="nav-item" data-view="empate" onclick="cerrarMenu()"><span class="nav-icon">⚡</span> Desempate</div>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn-logout" id="btn-logout">⬡ CERRAR SESIÓN</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div id="view-cursos" class="view active">
+      <div class="content-header"><div><div class="page-title">Cursos a Evaluar</div><div class="page-sub">PARTICIPANTES FERIA 2025 — 2026</div></div></div>
+      <div class="content-body"><div id="cursos-container" class="cursos-grid"><div class="loader">[ CARGANDO... ]</div></div></div>
+    </div>
+    <div id="view-rubrica" class="view">
+      <div class="content-header"><div><div class="page-title">Rúbrica de Evaluación</div><div class="page-sub">MÁXIMO 40 PUNTOS · 4 CRITERIOS</div></div></div>
+      <div class="content-body" id="rubrica-content"></div>
+    </div>
+    <div id="view-totales" class="view">
+      <div class="content-header"><div><div class="page-title">Totales y Rankings</div><div class="page-sub">PROMEDIOS EN TIEMPO REAL</div></div><button class="btn-sm cyan" id="btn-actualizar-totales">↻ ACTUALIZAR</button></div>
+      <div class="content-body"><div id="totales-container" class="totales-grid"><div class="loader">[ CARGANDO... ]</div></div></div>
+    </div>
+    <div id="view-edicion" class="view">
+      <div class="content-header"><div><div class="page-title">Edición de Calificación</div><div class="page-sub">CORREGIR EVALUACIÓN</div></div></div>
+      <div class="content-body" id="edicion-body">
+        <div style="margin-bottom:1.5rem;"><div style="font-family:var(--font-mono);font-size:10px;color:var(--cyan);letter-spacing:2px;margin-bottom:8px;">Selecciona curso</div><select id="edicion-select" style="width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);padding:10px;"><option value="">— Curso —</option></select></div>
+        <div id="edicion-form-container"></div>
+      </div>
+    </div>
+    <div id="view-evaluar" class="view">
+      <div class="content-header"><div><div class="page-title">Evaluar</div><div class="page-sub">SELECCIONA CURSO PARA COMENZAR</div></div></div>
+      <div class="content-body"><div id="evaluar-container" class="evaluar-grid"><div class="loader">[ CARGANDO... ]</div></div></div>
+    </div>
+    <div id="view-empate" class="view">
+      <div class="content-header"><div><div class="page-title">Desempate</div><div class="page-sub">RESOLUCIÓN DE EMPATES</div></div><button class="btn-sm cyan" id="btn-actualizar-empate">↻ ACTUALIZAR</button></div>
+      <div class="content-body"><div id="empate-container"><div class="loader">[ CARGANDO... ]</div></div></div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="modal-reps">
+  <div class="modal-box"><div class="modal-header"><div class="modal-title" id="modal-reps-title">Representantes</div><button class="modal-close" id="btn-cerrar-modal-reps">✕</button></div><div class="modal-body"><div id="modal-reps-body" class="reps-grid"></div></div></div>
+</div>
+
+<div class="eval-overlay" id="eval-overlay">
+  <div class="eval-container"><div class="eval-header"><button class="eval-back" id="btn-cancelar-eval">← CANCELAR</button><div class="eval-curso-title" id="eval-curso-nombre"></div><div class="eval-curso-proyecto" id="eval-curso-proyecto"></div></div><div id="eval-content"></div></div>
+</div>
+
+<script type="module" src="app.js"></script>
+
+
+<!-- ============ COPYRIGHT ============ -->
+<div style="position:fixed;bottom:0;left:0;right:0;text-align:center;padding:8px;font-family:var(--font-mono);font-size:9px;color:var(--text-faint);z-index:1;pointer-events:none;background:linear-gradient(transparent,rgba(6,10,16,0.9));">
+  © 2025 - 2026 · Robelin Mejías & Darlyng Mateo · Feria de Tecnología IPMHU
+</div>
+
+</body>
+</html>
